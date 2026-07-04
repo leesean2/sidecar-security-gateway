@@ -3,16 +3,23 @@ import os
 import tarfile
 import time
 import gzip
+# pyrefly: ignore [missing-import]
 from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+# pyrefly: ignore [missing-import]
 from fastapi.responses import Response
 from typing import List, Dict
-from fastapi import FastAPI, BackgroundTasks, HTTPException
+# pyrefly: ignore [missing-import]
+from fastapi import FastAPI, BackgroundTasks, HTTPException, Request
+# pyrefly: ignore [missing-import]
 from fastapi.responses import FileResponse, HTMLResponse
+# pyrefly: ignore [missing-import]
 import redis
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel
 
 app = FastAPI(title="Security Control Plane")
 
+# pyrefly: ignore [missing-import]
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
@@ -244,6 +251,7 @@ def receive_logs(entry: LogEntry, background_tasks: BackgroundTasks):
     return {"status": "processed"}
 
 @app.post("/opa/decision-logs")
+# pyrefly: ignore [unknown-name]
 async def receive_opa_decision_logs(request: Request):
     try:
         raw_body = await request.body()
