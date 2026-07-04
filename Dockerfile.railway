@@ -1,15 +1,18 @@
+# Get Envoy binary from official image
+FROM envoyproxy/envoy:v1.28.0 AS envoy-bin
+
+# Main build stage
 FROM python:3.11-slim
 
-# Install Envoy, OPA and Supervisor dependencies
-RUN apt-get update && apt-get install -y curl supervisor gnupg2 lsb-release && \
-    # Install Envoy GPG key and repo
-    curl -sL 'https://deb.dl.getenvoy.io/public/gpg.8127E0137E32E1D5.key' | gpg --dearmor -o /usr/share/keyrings/getenvoy-keyring.gpg && \
-    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/getenvoy-keyring.gpg] https://deb.dl.getenvoy.io/public/deb/debian $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/getenvoy.list && \
-    apt-get update && apt-get install -y envoy && \
-    # Install OPA
+# Copy Envoy binary from official image stage
+COPY --from=envoy-bin /usr/local/bin/envoy /usr/local/bin/envoy
+
+# Install OPA, Supervisor, and dependencies (no fragile APT repositories)
+RUN apt-get update && apt-get install -y curl supervisor && \
+    # Install OPA static binary
     curl -L -o /usr/local/bin/opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static && \
     chmod 755 /usr/local/bin/opa && \
-    # Clean up APT
+    # Clean up APT cache
     rm -rf /var/lib/apt/lists/*
 
 # Set up workdir
