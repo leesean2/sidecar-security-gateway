@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: target-app-deployment
+  labels:
+    app: target-app
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: target-app
+  template:
+    metadata:
+      labels:
+        app: target-app
+    spec:
+      volumes:
+      - name: envoy-config-vol
+        configMap:
+          name: envoy-config
+      - name: opa-config-vol
+        configMap:
+          name: opa-config
+      - name: envoy-logs-vol
+        emptyDir: {}
+      
+      containers:
+      # 1. Target Microservice App
+      - name: target-app
+        image: target-app:latest
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PYTHONUNBUFFERED
+          value: "1"
+
+      # 2. Envoy Proxy Sidecar
+      - name: envoy-sidecar
+        image: envoyproxy/envoy:v1.28.0
+        ports:
+        - containerPort: 8000
+        - containerPort: 19000
+        volumeMounts:
+        - name: envoy-config-vol
+          mountPath: /etc/envoy
+        - name: envoy-logs-vol
+          mountPath: /var/log/envoy
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+
+      # 3. OPA Sidecar
+      - name: opa-sidecar
+        image: openpolicyagent/opa:latest-envoy
+        command:
+        - "/opa"
+        - "run"
+        - "--server"
+        - "--config-file=/etc/opa/opa-config.yaml"
+        ports:
+        - containerPort: 8181
+        - containerPort: 9191
+        volumeMounts:
+        - name: opa-config-vol
+          mountPath: /etc/opa
+        resources:
+          limits:
+            cpu: "200m"
+            memory: "128Mi"
+          requests:
+            cpu: "50m"
+            memory: "64Mi"
+
+      # 4. Log Forwarder Sidecar
+      - name: log-forwarder
+        image: log-forwarder:latest
+        imagePullPolicy: Never
+        env:
+        - name: CONTROL_PLANE_URL
+          value: "http://control-plane-service:8090/logs"
+        volumeMounts:
+        - name: envoy-logs-vol
+          mountPath: /var/log/envoy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway-service
+spec:
+  type: NodePort
+  selector:
+    app: target-app
+  ports:
+  - name: http
+    protocol: TCP
+    port: 8000
+    targetPort: 8000
+    nodePort: 30080
+  - name: envoy-metrics
+    protocol: TCP
+    port: 19000
+    targetPort: 19000
+  - name: opa-metrics
+    protocol: TCP
+    port: 8181
+    targetPort: 8181

@@ -1,0 +1,39 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: control-plane-deployment
+  labels:
+    app: control-plane
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: control-plane
+  template:
+    metadata:
+      labels:
+        app: control-plane
+    spec:
+      containers:
+      - name: control-plane
+        image: control-plane:latest
+        imagePullPolicy: Never # Forces K8s to use local image loaded into Kind/Minikube
+        ports:
+        - containerPort: 8090
+        env:
+        - name: REDIS_HOST
+          value: "redis-service"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: control-plane-service
+spec:
+  type: NodePort
+  selector:
+    app: control-plane
+  ports:
+  - protocol: TCP
+    port: 8090
+    targetPort: 8090
+    nodePort: 30090

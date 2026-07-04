@@ -1,0 +1,22 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: opa-config
+data:
+  opa-config.yaml: |
+    services:
+      control-plane:
+        url: http://control-plane-service:8090
+    bundles:
+      authz:
+        service: control-plane
+        resource: bundles/security.tar.gz
+        polling:
+          min_delay_seconds: 2
+          max_delay_seconds: 5
+    plugins:
+      envoy_ext_authz_grpc:
+        addr: :9191
+        path: env_security/allow
+    decision_logs:
+      console: true
