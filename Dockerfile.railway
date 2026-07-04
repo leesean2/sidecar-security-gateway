@@ -1,0 +1,38 @@
+FROM python:3.11-slim
+
+# Install Envoy, OPA and Supervisor dependencies
+RUN apt-get update && apt-get install -y curl supervisor gnupg2 lsb-release && \
+    # Install Envoy GPG key and repo
+    curl -sL 'https://deb.dl.getenvoy.io/public/gpg.8127E0137E32E1D5.key' | gpg --dearmor -o /usr/share/keyrings/getenvoy-keyring.gpg && \
+    echo "deb [arch=amd64 signed-by=/usr/share/keyrings/getenvoy-keyring.gpg] https://deb.dl.getenvoy.io/public/deb/debian $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/getenvoy.list && \
+    apt-get update && apt-get install -y envoy && \
+    # Install OPA
+    curl -L -o /usr/local/bin/opa https://openpolicyagent.org/downloads/v1.18.2/opa_linux_amd64_static && \
+    chmod 755 /usr/local/bin/opa && \
+    # Clean up APT
+    rm -rf /var/lib/apt/lists/*
+
+# Set up workdir
+WORKDIR /app
+
+# Copy python dependencies and app files
+COPY apps/target-app/ /app/target-app/
+COPY log-forwarder/ /app/log-forwarder/
+
+# Install requirements
+RUN pip install --no-cache-dir -r /app/target-app/requirements.txt && \
+    pip install --no-cache-dir -r /app/log-forwarder/requirements.txt
+
+# Copy configs
+COPY envoy/envoy.yaml /etc/envoy/envoy.yaml
+COPY opa/opa-config.yaml /etc/opa/opa-config.yaml
+COPY k8s/supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Setup logs directory for log-forwarder
+RUN mkdir -p /var/log/envoy
+
+# Expose Envoy port
+EXPOSE 8000
+
+# Start supervisor
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
