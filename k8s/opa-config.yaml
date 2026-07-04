@@ -20,3 +20,9 @@ data:
         path: env_security/allow
     decision_logs:
       console: true
+      service: control-plane
+      resource: opa/decision_logs
+      reporting:
+        min_delay_seconds: 1
+        max_delay_seconds: 5
+        

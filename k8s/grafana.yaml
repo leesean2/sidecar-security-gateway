@@ -152,7 +152,7 @@ data:
                 "type": "prometheus",
                 "uid": "Prometheus"
               },
-              "expr: sum(rate(http_request_duration_seconds_count{job="opa-sidecar", handler="index"}[1m]))",
+              "expr: sum(rate(opa_policy_violations_total[1m]))",
               "legendFormat": "Evaluations/sec",
               "refId": "A"
             }

@@ -2,6 +2,9 @@ import json
 import os
 import tarfile
 import time
+import gzip
+from prometheus_client import Counter, generate_latest, CONTENT_TYPE_LATEST
+from fastapi.responses import Response
 from typing import List, Dict
 from fastapi import FastAPI, BackgroundTasks, HTTPException
 from fastapi.responses import FileResponse, HTMLResponse
@@ -31,7 +34,14 @@ BUNDLE_PATH = os.path.join(BUNDLE_DIR, "security.tar.gz")
 os.makedirs(BUNDLE_DIR, exist_ok=True)
 
 # In-memory blacklist, alerts, and HTTP logs fallback
+OPA_VIOLATION_COUNTER = Counter(
+    'opa_policy_violations_total',
+    'Total number of OPA policy violations parsed from decision logs',
+    ['method', 'path', 'reason']
+)
+
 blacklist_ips = {}  # Map IP -> Reason
+policy_violations_list = []
 alerts_list = []
 http_logs_list = []
 
@@ -232,6 +242,55 @@ def receive_logs(entry: LogEntry, background_tasks: BackgroundTasks):
         print(f"Error handling log entry: {e}")
 
     return {"status": "processed"}
+
+@app.post("/opa/decision-logs")
+async def receive_opa_decision_logs(request: Request):
+    try:
+        raw_body = await request.body()
+        if request.headers.get("content-encoding") == "gzip":
+            raw_body = gzip.decompress(raw_body)
+            
+        events = json.loads(raw_body.decode("utf-8"))
+        
+        for event in events:
+            result = event.get("result", {})
+            allowed = result.get("allowed") if isinstance(result, dict) else result
+            
+            if allowed is False:
+                input_data = event.get("input", {})
+                attributes = input_data.get("attributes", {})
+                http_req = attributes.get("request", {}).get("http", {})
+                source_net = attributes.get("source", {}).get("address", {})
+                
+                path = http_req.get("path", "unknown")
+                method = http_req.get("method", "unknown")
+                ip = source_net.get("address", event.get("requested_by", "unknown"))
+                
+                reason = "OPA policy denied request"
+                if isinstance(result, dict) and "body" in result:
+                    reason = result.get("body")
+                
+                alert_entry = {
+                    "id": f"opa-{int(time.time())}-{len(alerts_list)}",
+                    "type": "OPA Policy Violation",
+                    "ip": ip,
+                    "timestamp": time.strftime("%H:%M:%S"),
+                    "details": f"[{method}] {path} blocked: {reason}"
+                }
+                alerts_list.append(alert_entry)
+                policy_violations_list.append(alert_entry)
+                
+                # Prometheus 카운터 증가 (Grafana 연동 핵심)
+                OPA_VIOLATION_COUNTER.labels(method=method, path=path, reason=reason).inc()
+                
+        return {"status": "ok", "processed_records": len(events)}
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Failed to process decision logs: {str(e)}")
+
+
+@app.get("/metrics")
+def get_metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 @app.get("/blacklist")
 def get_current_blacklist():
