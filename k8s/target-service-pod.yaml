@@ -61,6 +61,7 @@ spec:
         - "/opa"
         - "run"
         - "--server"
+        - "--addr=:8181"
         - "--config-file=/etc/opa/opa-config.yaml"
         ports:
         - containerPort: 8181

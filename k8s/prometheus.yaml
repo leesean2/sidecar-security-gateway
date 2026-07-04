@@ -15,7 +15,7 @@ data:
           - targets: ['gateway-service:19000']
 
       - job_name: 'opa-sidecar'
-        metrics_path: '/v1/metrics'
+        metrics_path: '/metrics'
         static_configs:
           - targets: ['gateway-service:8181']
 ---
