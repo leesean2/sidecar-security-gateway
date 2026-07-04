@@ -10,6 +10,16 @@ from pydantic import BaseModel
 
 app = FastAPI(title="Security Control Plane")
 
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 REDIS_HOST = os.getenv("REDISHOST", os.getenv("REDIS_HOST", "localhost"))
 REDIS_PORT = int(os.getenv("REDISPORT", os.getenv("REDIS_PORT", 6379)))
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
