@@ -129,8 +129,8 @@
         .btn:hover { transform: translateY(-1px); box-shadow: 0 6px 20px var(--primary); }
         .btn-danger { background: linear-gradient(135deg, var(--danger), #b3003b); box-shadow: 0 4px 15px rgba(255, 0, 85, 0.3); }
         .btn-danger:hover { box-shadow: 0 6px 20px var(--danger); }
-        .btn-prometheus { background: linear-gradient(135deg, #e65100, #f57c00); box-shadow: 0 4px 15px rgba(230, 81, 0, 0.3); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
-        .btn-prometheus:hover { box-shadow: 0 6px 20px rgba(230, 81, 0, 0.6); }
+        .btn-grafana { background: linear-gradient(135deg, #f55f20, #f7931e); box-shadow: 0 4px 15px rgba(245, 95, 32, 0.3); text-decoration: none; display: inline-flex; align-items: center; gap: 0.5rem; }
+        .btn-grafana:hover { box-shadow: 0 6px 20px rgba(245, 95, 32, 0.6); }
         .btn-sm { padding: 0.3rem 0.6rem; font-size: 0.8rem; border-radius: 4px; }
         
         .list-container { overflow-y: auto; flex-grow: 1; padding-right: 0.5rem; }
@@ -187,13 +187,12 @@
         </div>
         <div class="header-controls">
             <input type="text" id="api-endpoint-input" class="endpoint-selector" placeholder="API Endpoint (e.g. http://localhost:8090)" onchange="updateAPIEndpoint(this.value)">
-            <a href="http://localhost:9090" target="_blank" class="btn btn-prometheus" id="prometheus-link">
+            <a href="http://localhost:3000" target="_blank" class="btn btn-grafana" id="grafana-link">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="18" y1="20" x2="18" y2="10"></line>
-                    <line x1="12" y1="20" x2="12" y2="4"></line>
-                    <line x1="6" y1="20" x2="6" y2="14"></line>
+                    <path d="M3 3v18h18"/>
+                    <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
                 </svg>
-                Prometheus Console
+                Grafana Dashboard
             </a>
             <div class="status-badge" id="gateway-status-badge">
                 <div class="status-dot"></div>
