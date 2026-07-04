@@ -10,9 +10,8 @@ from pydantic import BaseModel
 
 app = FastAPI(title="Security Control Plane")
 
-# Redis configuration from environment variables (fallback to localhost)
-REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
-REDIS_PORT = int(os.getenv("REDIS_PORT", 6379))
+REDIS_HOST = os.getenv("REDISHOST", os.getenv("REDIS_HOST", "localhost"))
+REDIS_PORT = int(os.getenv("REDISPORT", os.getenv("REDIS_PORT", 6379)))
 r = redis.Redis(host=REDIS_HOST, port=REDIS_PORT, decode_responses=True)
 
 BUNDLE_DIR = "/tmp/bundle" if os.name != 'nt' else "C:\\Users\\user\\OneDrive\\바탕 화면\\sidecar-security-gateway\\control-plane\\bundle"
