@@ -62,6 +62,7 @@ spec:
         - "run"
         - "--server"
         - "--addr=:8181"
+        - "--set=prometheus_metrics=true"
         - "--config-file=/etc/opa/opa-config.yaml"
         ports:
         - containerPort: 8181
